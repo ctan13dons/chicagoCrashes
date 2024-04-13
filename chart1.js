@@ -33,7 +33,7 @@ svgBody
   );
 
 const link =
-  'TrafficCrashesMAIN.csv';
+  './TrafficCrashesMAIN.csv';
 
 d3.csv(link).then((data) => {
   // Filter data for darkness conditions ('DARKNESS, LIGHTED ROAD', 'DARKNESS', or 'DUSK')

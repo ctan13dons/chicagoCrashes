@@ -7,7 +7,7 @@ const rightMargin = 100;
 const svgWidth = window.innerWidth - (leftMargin + rightMargin);
 const svgHeight = window.innerHeight - (topMargin + botMargin);
 
-const dataLink = 'TrafficCrashesMAIN.csv';
+const dataLink = './TrafficCrashesMAIN.csv';
 
 // Load the data
 d3.csv(dataLink).then((data) => {
