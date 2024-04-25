@@ -11,14 +11,6 @@ const svg = d3.select("#chart4")
   .append("g")
   .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
-// Put title at the top
-svg.append('text')
-  .attr('x', width / 2)
-  .attr('y', -margin.top / 2)
-  .attr('text-anchor', 'middle')
-  .style('font-size', '20px')
-  .text('Crash Type Comparison');
-
 const dataLink = './TrafficCrashesMAIN.csv';
 
 // Load CSV data
@@ -51,7 +43,6 @@ d3.csv(dataLink).then((data) => {
   const divergingData = [
     { type: "NO INJURY", count: noInjuryCount },
     { type: "INJURY", count: -injuryCount }, // Negative count for left-facing bars
-
     { type: "DRIVE AWAY", count: driveAwayCount },
     { type: "TOW AWAY", count: -towAwayCount } // Negative count for left-facing bars
   ];
@@ -75,12 +66,15 @@ d3.csv(dataLink).then((data) => {
     .attr("y", d => y(d.type))
     .attr("width", d => Math.abs(x(d.count) - x(0)))
     .attr("height", y.bandwidth())
-    .attr("fill", d => (d.type === "INJURY" || d.type === "TOW AWAY") ? "red" : "green")
+    .attr("fill", "steelblue")
     .on('mouseover', function (event, d) {
-      d3.select(this).attr('fill', 'steelblue');
+      d3.select(this).attr('fill', d => (d.type === "INJURY" || d.type === "TOW AWAY") ? "red" : "green");
+      tooltip.transition().duration(200).style('opacity', 0.9);
+      tooltip.html(`${d.type}<br/>Count: ${Math.abs(d.count)}`).style('left', event.pageX + 'px').style('top', event.pageY - 28 + 'px');
     })
     .on('mouseout', function (d) {
-      d3.select(this).attr('fill', d => (d.type === "INJURY" || d.type === "TOW AWAY") ? "red" : "green");
+      d3.select(this).attr('fill', 'steelblue');
+      tooltip.transition().duration(500).style('opacity', 0);
     });
 
   // Add labels
@@ -105,4 +99,11 @@ d3.csv(dataLink).then((data) => {
     .attr('x', -height / 2)
     .attr('text-anchor', 'middle')
     .text('Crash Type');
+
+  // Add a tooltip
+  const tooltip = d3
+    .select('#chart4')
+    .append('div')
+    .attr('class', 'tooltip')
+    .style('opacity', 0);
 });

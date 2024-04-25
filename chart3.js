@@ -44,7 +44,16 @@ d3.csv(dataLink).then(function(data) {
     .attr("width", d => d.x1 - d.x0)
     .attr("height", d => d.y1 - d.y0)
     .attr("fill", "steelblue")
-    .attr("stroke", "white");
+    .attr("stroke", "white")
+    .on('mouseover', function (event, d) {
+      d3.select(this).attr('fill', 'red');
+      tooltip.transition().duration(200).style('opacity', 0.9);
+      tooltip.html(`${d.data.cause}<br/>Count: ${d.data.count}`).style('left', event.pageX + 'px').style('top', event.pageY - 28 + 'px');
+    })
+    .on('mouseout', function (d) {
+      d3.select(this).attr('fill', 'steelblue');
+      tooltip.transition().duration(500).style('opacity', 0);
+    });
 
   // Add text labels
   svg.selectAll("text")
@@ -53,7 +62,14 @@ d3.csv(dataLink).then(function(data) {
     .append("text")
     .attr("x", d => d.x0 + 5)
     .attr("y", d => d.y0 + 20)
-    .text(d => `${d.data.cause}`) //`${d.data.cause} (${d.data.count})`
+    .text(d => `${d.data.cause}`)
     .attr("font-size", "10px")
     .attr("fill", "white");
+
+  // Add a tooltip
+  const tooltip = d3
+    .select('#chart3')
+    .append('div')
+    .attr('class', 'tooltip')
+    .style('opacity', 0);
 });

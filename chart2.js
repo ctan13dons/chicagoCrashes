@@ -68,10 +68,37 @@ d3.csv(dataLink).then((data) => {
     .style('stroke', 'steelblue')
     .style('stroke-width', 2);
 
+  // Draw dots
+  svg.selectAll(".dot")
+    .data(yearData)
+    .enter().append("circle")
+    .attr("class", "dot")
+    .attr("cx", d => x(d.year))
+    .attr("cy", d => y(d.count))
+    .attr("r", 5)
+    .style("fill", "steelblue")
+    .on("mouseover", function (event, d) {
+      d3.select(this).attr('fill', 'red');
+      tooltip.transition().duration(200).style('opacity', 0.9);
+      tooltip.html(`Year: ${d.year}<br/>Occurrences: ${d.count}`).style('left', event.pageX + 'px').style('top', event.pageY - 28 + 'px');
+    })
+    .on("mouseout", function (d) {
+      d3.select(this).attr('fill', 'steelblue');
+      tooltip.transition().duration(500).style('opacity', 0);
+    });
+
+  // Add a tooltip
+  const tooltip = d3
+    .select('#chart2')
+    .append('div')
+    .attr('class', 'tooltip')
+    .style('opacity', 0);
+
   // Draw axes
   const xAxis = d3.axisBottom(x).ticks(6).tickFormat(d3.format('d'));
   const yAxis = d3.axisLeft(y);
 
+  // Draw axes
   svg.append('g')
     .attr('class', 'x-axis')
     .attr('transform', `translate(0, ${svgHeight})`)

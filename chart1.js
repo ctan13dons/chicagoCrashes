@@ -16,15 +16,6 @@ const svgBody = d3
   .append('g') // group and move
   .attr('transform', 'translate(' + leftMargin + ',' + topMargin + ')');
 
-// Put title at the top
-svgBody
-  .append('text')
-  .attr('x', svgWidth / 2)
-  .attr('y', -topMargin / 2)
-  .attr('text-anchor', 'middle')
-  .style('font-size', '20px')
-  .text('Hourly Crash Count');
-
 const link = './TrafficCrashesMAIN.csv';
 
 // Load CSV data
@@ -81,6 +72,13 @@ d3.csv(link).then((data) => {
       d3.select(this).attr('fill', 'steelblue');
       tooltip.transition().duration(500).style('opacity', 0);
     });
+  
+  // Make tooltip
+  const tooltip = d3
+    .select('#chart1')
+    .append('div')
+    .attr('class', 'tooltip')
+    .style('opacity', 0);
 
   // x-axis label
   svgBody
@@ -98,10 +96,4 @@ d3.csv(link).then((data) => {
     .attr('x', -svgHeight / 2)
     .attr('text-anchor', 'middle')
     .text('Crash Count');
-  
-  const tooltip = d3
-    .select('#chart1')
-    .append('div')
-    .attr('class', 'tooltip')
-    .style('opacity', 0);
 });
