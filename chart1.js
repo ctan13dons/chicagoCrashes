@@ -5,7 +5,7 @@ const leftMargin = 150;
 const rightMargin = 150;
 
 const svgWidth =
-  window.innerWidth - (leftMargin + rightMargin);
+  window.innerWidth/2.5 - (leftMargin + rightMargin);
 const svgHeight =
   window.innerHeight - (topMargin + botMargin);
 
