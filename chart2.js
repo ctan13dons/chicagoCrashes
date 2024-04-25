@@ -1,11 +1,11 @@
 // Set up margins
-const topMargin = 130;
-const botMargin = 130;
+const topMargin = 100;
+const botMargin = 100;
 const leftMargin = 100;
 const rightMargin = 100;
 
-const svgWidth = window.innerWidth - (leftMargin + rightMargin);
-const svgHeight = window.innerHeight - (topMargin + botMargin);
+const svgWidth = 900 - (leftMargin + rightMargin);
+const svgHeight = 600 - (topMargin + botMargin);
 
 const dataLink = './TrafficCrashesMAIN.csv';
 

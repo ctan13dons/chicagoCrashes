@@ -1,25 +1,20 @@
 // Set up margins
-const topMargin = 150;
-const botMargin = 150;
-const leftMargin = 150;
-const rightMargin = 150;
+const topMargin = 100;
+const botMargin = 100;
+const leftMargin = 100;
+const rightMargin = 100;
 
-const svgWidth =
-  window.innerWidth/2.5 - (leftMargin + rightMargin);
-const svgHeight =
-  window.innerHeight - (topMargin + botMargin);
+const svgWidth = 900 - (leftMargin + rightMargin);
+const svgHeight = 600 - (topMargin + botMargin);
 
 // Set up svg area
 const svgBody = d3
   .select('#chart1')
   .append('svg')
-  .attr('width', window.innerWidth)
-  .attr('height', window.innerHeight)
+  .attr('width', svgWidth + leftMargin + rightMargin)
+  .attr('height', svgHeight + topMargin + botMargin)
   .append('g') // group and move
-  .attr(
-    'transform',
-    'translate(' + leftMargin + ',' + topMargin + ')',
-  );
+  .attr('transform', 'translate(' + leftMargin + ',' + topMargin + ')');
 
 // Put title at the top
 svgBody
@@ -28,37 +23,26 @@ svgBody
   .attr('y', -topMargin / 2)
   .attr('text-anchor', 'middle')
   .style('font-size', '20px')
-  .text(
-    'Lighting Conditions Count Comparison',
-  );
+  .text('Hourly Crash Count');
 
-const link =
-  './TrafficCrashesMAIN.csv';
+const link = './TrafficCrashesMAIN.csv';
 
+// Load CSV data
 d3.csv(link).then((data) => {
-  // Filter data for darkness conditions ('DARKNESS, LIGHTED ROAD', 'DARKNESS', or 'DUSK')
-  const darknessData = data.filter(d => 
-    d.LIGHTING_CONDITION === 'DARKNESS, LIGHTED ROAD' ||
-    d.LIGHTING_CONDITION === 'DARKNESS' ||
-    d.LIGHTING_CONDITION === 'DUSK'
-  );
+  // Count occurrences for each hour
+  const hourCounts = Array.from({ length: 24 }, () => 0);
+  data.forEach(d => {
+    const hour = parseInt(d.CRASH_HOUR);
+    hourCounts[hour]++;
+  });
 
-  // Count occurrences of darkness conditions
-  const darknessCount = darknessData.length;
-
-  // Count occurrences of daylight conditions
-  const daylightCount = data.length - darknessCount;
-
-  const chartData = [
-    { condition: 'Darkness', count: darknessCount },
-    { condition: 'Daylight', count: daylightCount }
-  ];
+  const chartData = hourCounts.map((count, hour) => ({ hour: hour, count: count }));
 
   // x-axis scale
   const x = d3
     .scaleBand()
     .range([0, svgWidth])
-    .domain(chartData.map(d => d.condition))
+    .domain(chartData.map(d => d.hour.toString()))
     .padding(0.2);
 
   // x-axis
@@ -83,21 +67,28 @@ d3.csv(link).then((data) => {
     .enter()
     .append('rect')
     .attr('class', 'bar')
-    .attr('x', d => x(d.condition))
+    .attr('x', d => x(d.hour.toString()))
     .attr('width', x.bandwidth())
     .attr('y', d => y(d.count))
     .attr('height', d => svgHeight - y(d.count))
-    .attr('fill', d => d.condition === 'Darkness' ? 'steelblue' : 'orange');
+    .attr('fill', 'steelblue')
+    .on('mouseover', function (event, d) {
+      d3.select(this).attr('fill', 'red');
+      tooltip.transition().duration(200).style('opacity', 0.9);
+      tooltip.html(`Hour: ${d.hour}<br/>Crash Count: ${d.count}`).style('left', event.pageX + 'px').style('top', event.pageY - 28 + 'px');
+    })
+    .on('mouseout', function (d) {
+      d3.select(this).attr('fill', 'steelblue');
+      tooltip.transition().duration(500).style('opacity', 0);
+    });
 
   // x-axis label
   svgBody
     .append('text')
-    .attr(
-      'transform',
-      `translate(${svgWidth / 2},${svgHeight + topMargin - 50})`,
-    )
-    .style('text-anchor', 'middle')
-    .text('Lighting Conditions');
+    .attr('x', svgWidth / 2)
+    .attr('y', svgHeight + topMargin - 50)
+    .attr('text-anchor', 'middle')
+    .text('Hour of the Day');
 
   // y-axis label
   svgBody
@@ -105,7 +96,12 @@ d3.csv(link).then((data) => {
     .attr('transform', 'rotate(-90)')
     .attr('y', -leftMargin + 40)
     .attr('x', -svgHeight / 2)
-    .style('text-anchor', 'middle')
-    .text('Count');
-
+    .attr('text-anchor', 'middle')
+    .text('Crash Count');
+  
+  const tooltip = d3
+    .select('#chart1')
+    .append('div')
+    .attr('class', 'tooltip')
+    .style('opacity', 0);
 });
