@@ -2,7 +2,7 @@
 const topMargin = 100;
 const botMargin = 100;
 const leftMargin = 100;
-const rightMargin = 100;
+const rightMargin = 50;
 
 const svgWidth = 900 - (leftMargin + rightMargin);
 const svgHeight = 600 - (topMargin + botMargin);
@@ -29,6 +29,9 @@ d3.csv(link).then((data) => {
 
   const chartData = hourCounts.map((count, hour) => ({ hour: hour, count: count }));
 
+  // Convert hour values to time format for hover text
+  const timeFormat = d3.timeFormat('%I:00 %p');
+
   // x-axis scale
   const x = d3
     .scaleBand()
@@ -40,7 +43,9 @@ d3.csv(link).then((data) => {
   svgBody
     .append('g')
     .attr('transform', `translate(0,${svgHeight})`)
-    .call(d3.axisBottom(x));
+    .call(d3.axisBottom(x))
+    .selectAll('text')
+    .attr('font-size', '16px');
 
   // y-axis scale
   const y = d3
@@ -48,8 +53,17 @@ d3.csv(link).then((data) => {
     .domain([0, d3.max(chartData, d => d.count)])
     .range([svgHeight, 0]);
 
+  // Format y-axis ticks to display "k" for thousands
+  const customYAxisTickFormat = (value) => {
+    return value >= 1000 ? (value / 1000) + 'k' : value;
+  };
+
   // y-axis
-  svgBody.append('g').call(d3.axisLeft(y).tickSizeOuter(0));
+  svgBody
+    .append('g')
+    .call(d3.axisLeft(y).tickSizeOuter(0).tickFormat(customYAxisTickFormat))
+    .selectAll('text')
+    .attr('font-size', '15px');
 
   // Draw bars
   svgBody
@@ -65,8 +79,9 @@ d3.csv(link).then((data) => {
     .attr('fill', 'steelblue')
     .on('mouseover', function (event, d) {
       d3.select(this).attr('fill', 'red');
-      tooltip.transition().duration(200).style('opacity', 0.9);
-      tooltip.html(`Hour: ${d.hour}<br/>Crash Count: ${d.count}`).style('left', event.pageX + 'px').style('top', event.pageY - 28 + 'px');
+      tooltip.transition().duration(200).style('opacity', 1);
+      tooltip.html(`${timeFormat(new Date(2024, 0, 1, +d.hour))}<br/>Crash Count: ${d3.format(',')(d.count)}`) 
+        .style('left', event.pageX + 'px').style('top', event.pageY - 28 + 'px');
     })
     .on('mouseout', function (d) {
       d3.select(this).attr('fill', 'steelblue');
@@ -86,6 +101,7 @@ d3.csv(link).then((data) => {
     .attr('x', svgWidth / 2)
     .attr('y', svgHeight + topMargin - 50)
     .attr('text-anchor', 'middle')
+    .attr('font-size', '24px')
     .text('Hour of the Day');
 
   // y-axis label
@@ -95,5 +111,6 @@ d3.csv(link).then((data) => {
     .attr('y', -leftMargin + 40)
     .attr('x', -svgHeight / 2)
     .attr('text-anchor', 'middle')
+    .attr('font-size', '24px')
     .text('Crash Count');
 });

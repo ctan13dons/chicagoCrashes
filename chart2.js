@@ -2,9 +2,9 @@
 const topMargin = 100;
 const botMargin = 100;
 const leftMargin = 100;
-const rightMargin = 100;
+const rightMargin = 80;
 
-const svgWidth = 900 - (leftMargin + rightMargin);
+const svgWidth = 1000 - (leftMargin + rightMargin);
 const svgHeight = 600 - (topMargin + botMargin);
 
 const dataLink = './TrafficCrashesMAIN.csv';
@@ -51,7 +51,7 @@ d3.csv(dataLink).then((data) => {
 
   const y = d3
     .scaleLinear()
-    .domain([0, d3.max(yearData, d => d.count) + 20000])
+    .domain([0, Math.ceil((d3.max(yearData, d => d.count) + 20000) / 20000) * 20000]) // Adjusted for 20k interval
     .range([svgHeight, 0]);
 
   // Line generator
@@ -60,13 +60,24 @@ d3.csv(dataLink).then((data) => {
     .y(d => y(d.count));
 
   // Draw line
-  svg.append('path')
+  const linePath = svg.append('path')
     .datum(yearData)
     .attr('class', 'line')
     .attr('d', line)
     .style('fill', 'none')
     .style('stroke', 'steelblue')
-    .style('stroke-width', 2);
+    .style('stroke-width', 4)
+    .on("mouseover", function (event) {
+      const totalCrashes = d3.sum(yearData, d => d.count);
+      d3.select(this).style('stroke-width', 7).style('stroke', 'red');
+      tooltip.transition().duration(200).style('opacity', 1);
+      tooltip.html(`Total Crashes from 2018 - 2023:<br/>${d3.format(',')(totalCrashes)}`); // Change here for 10k display
+      tooltip.style('left', event.pageX + 'px').style('top', event.pageY - 28 + 'px');
+    })
+    .on("mouseout", function () {
+      d3.select(this).style('stroke-width', 4).style('stroke', 'steelblue');
+      tooltip.transition().duration(500).style('opacity', 0);
+    });
 
   // Draw dots
   svg.selectAll(".dot")
@@ -75,15 +86,15 @@ d3.csv(dataLink).then((data) => {
     .attr("class", "dot")
     .attr("cx", d => x(d.year))
     .attr("cy", d => y(d.count))
-    .attr("r", 5)
+    .attr("r", 8)
     .style("fill", "steelblue")
     .on("mouseover", function (event, d) {
-      d3.select(this).attr('fill', 'red');
-      tooltip.transition().duration(200).style('opacity', 0.9);
-      tooltip.html(`Year: ${d.year}<br/>Occurrences: ${d.count}`).style('left', event.pageX + 'px').style('top', event.pageY - 28 + 'px');
+      d3.select(this).attr("r", 12).style('fill', 'red');
+      tooltip.transition().duration(200).style('opacity', 1);
+      tooltip.html(`Year: ${d.year}<br/>Occurrences: ${d3.format(',')(d.count)}`).style('left', event.pageX + 'px').style('top', event.pageY - 28 + 'px');
     })
     .on("mouseout", function (d) {
-      d3.select(this).attr('fill', 'steelblue');
+      d3.select(this).attr("r", 8).style('fill', 'steelblue');
       tooltip.transition().duration(500).style('opacity', 0);
     });
 
@@ -96,24 +107,28 @@ d3.csv(dataLink).then((data) => {
 
   // Draw axes
   const xAxis = d3.axisBottom(x).ticks(6).tickFormat(d3.format('d'));
-  const yAxis = d3.axisLeft(y);
+  const yAxis = d3.axisLeft(y).tickValues(d3.range(0, Math.ceil((d3.max(yearData, d => d.count) + 20000) / 20000) * 20000 + 1, 20000)).tickFormat(d => d / 1000 + "k"); // For 20k interval and displaying 10k instead of 10,000
 
   // Draw axes
   svg.append('g')
     .attr('class', 'x-axis')
     .attr('transform', `translate(0, ${svgHeight})`)
-    .call(xAxis);
+    .call(xAxis)
+    .selectAll('text')
+    .style('font-size', '16px'); 
 
   svg.append('g')
     .attr('class', 'y-axis')
-    .call(yAxis);
+    .call(yAxis)
+    .selectAll('text')
+    .style('font-size', '16px'); 
 
   // Label x axis
   svg.append('text')
     .attr('x', svgWidth / 2)
     .attr('y', svgHeight + botMargin / 2)
     .attr('text-anchor', 'middle')
-    .style('font-size', '16px')
+    .style('font-size', '24px')
     .style('font-weight', 'bold')
     .text('Year');
 
@@ -122,8 +137,8 @@ d3.csv(dataLink).then((data) => {
     .attr('x', -svgHeight / 2)
     .attr('y', -leftMargin / 2)
     .attr('text-anchor', 'middle')
-    .style('font-size', '16px')
+    .style('font-size', '24px')
     .style('font-weight', 'bold')
     .attr('transform', 'rotate(-90)')
-    .text('Occurrences');
+    .text('Crashes');
 });

@@ -57,6 +57,17 @@ d3.csv(dataLink).then((data) => {
     .range([0, height])
     .padding(0.1);
 
+  // Format x-axis ticks to be positives and k
+  const customXAxisTickFormat = (value) => {
+    if(value === 0){
+      return 0;
+    }
+    return Math.abs(value / 1000) + "k";
+  };
+
+  // Add a comma in the hover value
+  const formatValue = d3.format(","); // This will add commas to numbers
+
   // Create bars
   svg.selectAll(".bar")
     .data(divergingData)
@@ -70,35 +81,33 @@ d3.csv(dataLink).then((data) => {
     .on('mouseover', function (event, d) {
       d3.select(this).attr('fill', d => (d.type === "INJURY" || d.type === "TOW AWAY") ? "red" : "green");
       tooltip.transition().duration(200).style('opacity', 0.9);
-      tooltip.html(`${d.type}<br/>Count: ${Math.abs(d.count)}`).style('left', event.pageX + 'px').style('top', event.pageY - 28 + 'px');
+      tooltip.html(`${d.type}<br/>Count: ${formatValue(Math.abs(d.count))}`).style('left', event.pageX + 'px').style('top', event.pageY - 28 + 'px');
     })
     .on('mouseout', function (d) {
       d3.select(this).attr('fill', 'steelblue');
       tooltip.transition().duration(500).style('opacity', 0);
     });
 
-  // Add labels
+  // Add x-axis with custom tick format
   svg.append("g")
     .attr("transform", "translate(0," + height + ")")
-    .call(d3.axisBottom(x));
+    .call(d3.axisBottom(x).tickFormat(customXAxisTickFormat))
+    .selectAll("text")  
+    .style("font-size", "16px"); 
 
+  // Add y-axis
   svg.append("g")
-    .call(d3.axisLeft(y));
+    .call(d3.axisLeft(y))
+    .selectAll("text")  
+    .style("font-size", "15px"); 
 
   // Add x-axis label
   svg.append('text')
     .attr('x', width / 2)
     .attr('y', height + margin.top - 50)
     .attr('text-anchor', 'middle')
+    .style('font-size', '20px')
     .text('Crash Count');
-
-  // Add y-axis label
-  svg.append('text')
-    .attr('transform', 'rotate(-90)')
-    .attr('y', -margin.left + 40)
-    .attr('x', -height / 2)
-    .attr('text-anchor', 'middle')
-    .text('Crash Type');
 
   // Add a tooltip
   const tooltip = d3

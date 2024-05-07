@@ -12,8 +12,10 @@ const dataLink = './TrafficCrashesMAIN.csv';
 
 // Read the CSV data
 d3.csv(dataLink).then(function(data) {
+  // Ignore n/a data
   data = data.filter(d => d.PRIM_CONTRIBUTORY_CAUSE !== "NOT APPLICABLE");
   data = data.filter(d => d.PRIM_CONTRIBUTORY_CAUSE !== "UNABLE TO DETERMINE");
+
   // Aggregate counts for each unique value in the column PRIM_CONTRIBUTORY_CAUSE
   const causeCounts = d3.rollup(data, v => v.length, d => d.PRIM_CONTRIBUTORY_CAUSE);
 
@@ -48,22 +50,44 @@ d3.csv(dataLink).then(function(data) {
     .on('mouseover', function (event, d) {
       d3.select(this).attr('fill', 'red');
       tooltip.transition().duration(200).style('opacity', 0.9);
-      tooltip.html(`${d.data.cause}<br/>Count: ${d.data.count}`).style('left', event.pageX + 'px').style('top', event.pageY - 28 + 'px');
+      tooltip.html(`${d.data.cause}<br/>Count: ${d3.format(',')(d.data.count)}`).style('left', event.pageX + 'px').style('top', event.pageY - 28 + 'px');
     })
     .on('mouseout', function (d) {
       d3.select(this).attr('fill', 'steelblue');
       tooltip.transition().duration(500).style('opacity', 0);
     });
 
+  // Only display these labels and shorten some of them
+  const causesWithLabels = [
+    { original: "FAILING TO YIELD RIGHT-OF-WAY", shortened: "FAILING TO YIELD" },
+    { original: "FOLLOWING TOO CLOSELY", shortened: "FOLLOWING TOO CLOSELY" },
+    { original: "IMPROPER OVERTAKING/PASSING", shortened: "IMPROPER PASSING" },
+    { original: "IMPROPER TURNING/NO SIGNAL", shortened: "IMPROPER TURNING" },
+    { original: "DRIVING SKILLS/KNOWLEDGE/EXPERIENCE", shortened: "DRIVER SKILL ISSUE" },
+    { original: "FAILING TO REDUCE SPEED TO AVOID CRASH", shortened: "SPEEDING" },
+    { original: "IMPROPER BACKING", shortened: "REVERSING" },
+    { original: "IMPROPER LANE USAGE", shortened: "BAD LANE USE" },
+    { original: "DISREGARDING TRAFFIC SIGNALS", shortened: "DISREGARDING SIGNALS" },
+    { original: "WEATHER", shortened: "WEATHER" },
+    { original: "OPERATING VEHICLE IN ERRACTIC, RECKLESS, CARELESS, NEGLIGENT, OR AGGRESIVE MANNER", shortened: "RECKLESS DRIVING" },
+    { original: "RECKLESS DRIVING", shortened: "RECKLESS DRIVING" }
+  ];
+
+  // Filter the treemap nodes to only include the specified causes
+  const labeledNodes = root.leaves().filter(d => causesWithLabels.map(c => c.original).includes(d.data.cause));
+
   // Add text labels
   svg.selectAll("text")
-    .data(root.leaves())
+    .data(labeledNodes)
     .enter()
     .append("text")
     .attr("x", d => d.x0 + 5)
     .attr("y", d => d.y0 + 20)
-    .text(d => `${d.data.cause}`)
-    .attr("font-size", "10px")
+    .text(d => {
+      const label = causesWithLabels.find(c => c.original === d.data.cause);
+      return label ? label.shortened : '';
+    })
+    .attr("font-size", "14px") // Increased font size
     .attr("fill", "white");
 
   // Add a tooltip
