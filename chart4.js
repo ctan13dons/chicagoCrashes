@@ -1,6 +1,6 @@
 // Set up margins and dimensions
-const margin = { top: 100, right: 100, bottom: 100, left: 100 };
-const width = 900 - margin.left - margin.right;
+const margin = { top: 100, right: 100, bottom: 100, left: 120 };
+const width = 1000 - margin.left - margin.right;
 const height = 600 - margin.top - margin.bottom;
 
 // Create SVG element
@@ -48,7 +48,8 @@ d3.csv(dataLink).then((data) => {
     { type: "NO INJURY", count: noInjuryCount },
     { type: "INJURY", count: -injuryCount }, // Negative count for left-facing bars
     { type: "DRIVE AWAY", count: driveAwayCount },
-    { type: "TOW AWAY", count: -towAwayCount } // Negative count for left-facing bars
+    { type: "TOW AWAY", count: -towAwayCount }, // Negative count for left-facing bars
+    { type: "INJURY & TOW", count: -(injuryCount + towAwayCount) } // Negative count for left-facing bar
   ];
 
   // Create scales
@@ -64,7 +65,7 @@ d3.csv(dataLink).then((data) => {
   // Format x-axis ticks to be positives and k
   const customXAxisTickFormat = (value) => {
     if (value === 0) {
-        return 0;
+      return 0;
     }
     return Math.abs(value / 1000) + "k";
   };
@@ -85,7 +86,7 @@ d3.csv(dataLink).then((data) => {
       if (d.type === "TOTAL") {
         return "gray"; 
       } else {
-        return (d.type === "INJURY" || d.type === "TOW AWAY") ? "red" : "green";
+        return (d.type === "INJURY" || d.type === "TOW AWAY" || d.type === "INJURY & TOW") ? "red" : "green";
       }
     })
     .on('mouseover', function (event, d) {
@@ -96,9 +97,9 @@ d3.csv(dataLink).then((data) => {
     .on('mouseout', function (d) {
       d3.select(this).attr('fill', d => {
         if (d.type === "TOTAL") {
-          return "lightgray"; // Restore original fill color for the "Total" bar on mouseout
+          return "gray"; 
         } else {
-          return (d.type === "INJURY" || d.type === "TOW AWAY") ? "red" : "green";
+          return (d.type === "INJURY" || d.type === "TOW AWAY" || d.type === "INJURY & TOW") ? "red" : "green";
         }
       });
       tooltip.transition().duration(500).style('opacity', 0);
