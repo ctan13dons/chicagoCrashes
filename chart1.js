@@ -2,115 +2,155 @@
 const topMargin = 100;
 const botMargin = 100;
 const leftMargin = 100;
-const rightMargin = 50;
+const rightMargin = 80;
 
-const svgWidth = 900 - (leftMargin + rightMargin);
+const svgWidth = 1000 - (leftMargin + rightMargin);
 const svgHeight = 600 - (topMargin + botMargin);
 
-// Set up svg area
-const svgBody = d3
-  .select('#chart1')
-  .append('svg')
-  .attr('width', svgWidth + leftMargin + rightMargin)
-  .attr('height', svgHeight + topMargin + botMargin)
-  .append('g') // group and move
-  .attr('transform', 'translate(' + leftMargin + ',' + topMargin + ')');
+const dataLink = './TrafficCrashesMAIN.csv';
 
-const link = './TrafficCrashesMAIN.csv';
+// Load the data
+d3.csv(dataLink).then((data) => {
+  // Initialize an object to count occurrences of each year
+  const yearCounts = {};
 
-// Load CSV data
-d3.csv(link).then((data) => {
-  // Count occurrences for each hour
-  const hourCounts = Array.from({ length: 24 }, () => 0);
-  data.forEach(d => {
-    const hour = parseInt(d.CRASH_HOUR);
-    hourCounts[hour]++;
+  // Loop through the data and count occurrences of each year
+  data.forEach((d) => {
+    // Parse the date and extract the year
+    const date = new Date(d.CRASH_DATE);
+    const year = date.getFullYear();
+
+    // Increment the count for this year
+    if (yearCounts[year]) {
+      yearCounts[year]++;
+    } else {
+      yearCounts[year] = 1;
+    }
   });
 
-  const chartData = hourCounts.map((count, hour) => ({ hour: hour, count: count }));
+  // Create an array of objects with year and count for D3 data binding
+  const yearData = [];
+  for (let year = 2018; year <= 2023; year++) {
+    yearData.push({ year: year, count: yearCounts[year] || 0 });
+  }
 
-  // Convert hour values to time format for hover text
-  const timeFormat = d3.timeFormat('%I:00 %p');
-
-  // x-axis scale
-  const x = d3
-    .scaleBand()
-    .range([0, svgWidth])
-    .domain(chartData.map(d => d.hour.toString()))
-    .padding(0.2);
-
-  // x-axis
-  svgBody
+  // Create SVG element
+  const svg = d3
+    .select('#chart1')
+    .append('svg')
+    .attr('width', svgWidth + leftMargin + rightMargin)
+    .attr('height', svgHeight + topMargin + botMargin)
     .append('g')
-    .attr('transform', `translate(0,${svgHeight})`)
-    .call(d3.axisBottom(x))
-    .selectAll('text')
-    .attr('font-size', '16px');
+    .attr('transform', `translate(${leftMargin},${topMargin})`);
 
-  // y-axis scale
+  // Scales for x and y
+  const x = d3
+    .scaleLinear()
+    .domain([2018, 2023])
+    .range([0, svgWidth]);
+
   const y = d3
     .scaleLinear()
-    .domain([0, d3.max(chartData, d => d.count)])
+    .domain([0, Math.ceil((d3.max(yearData, d => d.count) + 20000) / 20000) * 20000]) // Adjusted for 20k interval
     .range([svgHeight, 0]);
 
-  // Format y-axis ticks to display "k" for thousands
-  const customYAxisTickFormat = (value) => {
-    return value >= 1000 ? (value / 1000) + 'k' : value;
-  };
+  // Line generator
+  const line = d3.line()
+    .x(d => x(d.year))
+    .y(d => y(d.count));
 
-  // y-axis
-  svgBody
-    .append('g')
-    .call(d3.axisLeft(y).tickSizeOuter(0).tickFormat(customYAxisTickFormat))
-    .selectAll('text')
-    .attr('font-size', '15px');
-
-  // Draw bars
-  svgBody
-    .selectAll('.bar')
-    .data(chartData)
-    .enter()
-    .append('rect')
-    .attr('class', 'bar')
-    .attr('x', d => x(d.hour.toString()))
-    .attr('width', x.bandwidth())
-    .attr('y', d => y(d.count))
-    .attr('height', d => svgHeight - y(d.count))
-    .attr('fill', 'steelblue')
-    .on('mouseover', function (event, d) {
-      d3.select(this).attr('fill', 'red');
+  // Draw line
+  const linePath = svg.append('path')
+    .datum(yearData)
+    .attr('class', 'line')
+    .attr('d', line)
+    .style('fill', 'none')
+    .style('stroke', 'steelblue')
+    .style('stroke-width', 4)
+    .on("mouseover", function (event) {
+      const totalCrashes = d3.sum(yearData, d => d.count);
+      d3.select(this).style('stroke-width', 7).style('stroke', 'red');
       tooltip.transition().duration(200).style('opacity', 1);
-      tooltip.html(`${timeFormat(new Date(2024, 0, 1, +d.hour))}<br/>Crash Count: ${d3.format(',')(d.count)}`) 
-        .style('left', event.pageX + 'px').style('top', event.pageY - 28 + 'px');
+      tooltip.html(`Total Crashes from 2018 - 2023:<br/>${d3.format(',')(totalCrashes)}`); // Change here for 10k display
+      tooltip.style('left', event.pageX + 'px').style('top', event.pageY - 28 + 'px');
     })
-    .on('mouseout', function (d) {
-      d3.select(this).attr('fill', 'steelblue');
+    .on("mouseout", function () {
+      d3.select(this).style('stroke-width', 4).style('stroke', 'steelblue');
       tooltip.transition().duration(500).style('opacity', 0);
     });
-  
-  // Make tooltip
+
+  // Draw dots
+  svg.selectAll(".dot")
+    .data(yearData)
+    .enter().append("circle")
+    .attr("class", "dot")
+    .attr("cx", d => x(d.year))
+    .attr("cy", d => y(d.count))
+    .attr("r", 8)
+    .style("fill", "steelblue")
+    .on("mouseover", function (event, d) {
+      d3.select(this).attr("r", 12).style('fill', 'red');
+      tooltip.transition().duration(200).style('opacity', 1);
+      tooltip.html(`Year: ${d.year}<br/>Occurrences: ${d3.format(',')(d.count)}`).style('left', event.pageX + 'px').style('top', event.pageY - 28 + 'px');
+    })
+    .on("mouseout", function (d) {
+      d3.select(this).attr("r", 8).style('fill', 'steelblue');
+      tooltip.transition().duration(500).style('opacity', 0);
+    });
+
+  // Add a tooltip
   const tooltip = d3
     .select('#chart1')
     .append('div')
     .attr('class', 'tooltip')
     .style('opacity', 0);
 
-  // x-axis label
-  svgBody
-    .append('text')
-    .attr('x', svgWidth / 2)
-    .attr('y', svgHeight + topMargin - 50)
-    .attr('text-anchor', 'middle')
-    .attr('font-size', '24px')
-    .text('Hour of the Day');
+  // Draw axes
+  const xAxis = d3.axisBottom(x).ticks(6).tickFormat(d3.format('d'));
+  const yAxis = d3.axisLeft(y).tickValues(d3.range(0, Math.ceil((d3.max(yearData, d => d.count) + 20000) / 20000) * 20000 + 1, 20000)).tickFormat(d => d / 1000 + "k"); // For 20k interval and displaying 10k instead of 10,000
 
-  // y-axis label
-  svgBody
-    .append('text')
-    .attr('transform', 'rotate(-90)')
-    .attr('y', -leftMargin + 40)
-    .attr('x', -svgHeight / 2)
+  // Draw axes
+  svg.append('g')
+    .attr('class', 'x-axis')
+    .attr('transform', `translate(0, ${svgHeight})`)
+    .call(xAxis)
+    .selectAll('text')
+    .style('font-size', '16px'); 
+
+  svg.append('g')
+    .attr('class', 'y-axis')
+    .call(yAxis)
+    .selectAll('text')
+    .style('font-size', '16px'); 
+
+  // Label x axis
+  svg.append('text')
+    .attr('x', svgWidth / 2)
+    .attr('y', svgHeight + botMargin / 2)
     .attr('text-anchor', 'middle')
-    .attr('font-size', '24px')
-    .text('Crash Count');
+    .style('font-size', '24px')
+    .style('font-weight', 'bold')
+    .text('Year');
+
+  // Label y axis
+  svg.append('text')
+    .attr('x', -svgHeight / 2)
+    .attr('y', -leftMargin / 2)
+    .attr('text-anchor', 'middle')
+    .style('font-size', '24px')
+    .style('font-weight', 'bold')
+    .attr('transform', 'rotate(-90)')
+    .text('Crashes');
+
+  // Find the data for the year 2020
+  const data2020 = yearData.find(d => d.year === 2020);
+
+  // Add annotation for 2020 dot
+  svg.append('text')
+    .attr('class', 'annotation')
+    .attr('x', x(data2020.year) + 20) 
+    .attr('y', y(data2020.count) + 20) 
+    .style('font-size', '14px')
+    .style('fill', 'black')
+    .text('Decrease in crashes due to COVID-19 pandemic');
 });

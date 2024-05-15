@@ -17,30 +17,34 @@ const dataLink = './TrafficCrashesMAIN.csv';
 d3.csv(dataLink).then((data) => {
   // Initialize counts for each type of crash
   let injuryCount = 0;
-  let noInjuryCount = 0;
-  let driveAwayCount = 0;
   let towAwayCount = 0;
 
   data.forEach(d => {
     const crashType = d.CRASH_TYPE;
-    if (crashType.includes("DRIVE AWAY")) {
-      driveAwayCount++;
-    } else {
-      towAwayCount++;
+    const injuriesTotal = +d.INJURIES_TOTAL; // Convert string to number
+
+    // Logic for determining counts
+    if (crashType === "INJURY AND / OR TOW DUE TO CRASH") {
+      if (injuriesTotal > 0) {
+        injuryCount++;
+      } else {
+        towAwayCount++;
+      }
     }
   });
 
-  data.forEach(d => {
-    const crashType = d.CRASH_TYPE;
-    if (crashType.includes("NO INJURY")) {
-      noInjuryCount++;
-    } else {
-      injuryCount++;
-    }
-  });
+  // Calculate the total count of entries
+  const totalCount = data.length;
+
+  // Calculate the count of "drive away" entries
+  const driveAwayCount = totalCount - towAwayCount;
+
+  // Calculate the count of "no injury" entries
+  const noInjuryCount = totalCount - injuryCount;
 
   // Data for diverging bar chart
   const divergingData = [
+    { type: "TOTAL", count: totalCount },
     { type: "NO INJURY", count: noInjuryCount },
     { type: "INJURY", count: -injuryCount }, // Negative count for left-facing bars
     { type: "DRIVE AWAY", count: driveAwayCount },
@@ -59,8 +63,8 @@ d3.csv(dataLink).then((data) => {
 
   // Format x-axis ticks to be positives and k
   const customXAxisTickFormat = (value) => {
-    if(value === 0){
-      return 0;
+    if (value === 0) {
+        return 0;
     }
     return Math.abs(value / 1000) + "k";
   };
@@ -76,15 +80,27 @@ d3.csv(dataLink).then((data) => {
     .attr("x", d => x(Math.min(0, d.count))) // Use Math.min to determine the start position of the bars
     .attr("y", d => y(d.type))
     .attr("width", d => Math.abs(x(d.count) - x(0)))
-    .attr("height", y.bandwidth())
-    .attr("fill", "steelblue")
+    .attr("height", y.bandwidth() * 0.7)
+    .attr("fill", d => {
+      if (d.type === "TOTAL") {
+        return "gray"; 
+      } else {
+        return (d.type === "INJURY" || d.type === "TOW AWAY") ? "red" : "green";
+      }
+    })
     .on('mouseover', function (event, d) {
-      d3.select(this).attr('fill', d => (d.type === "INJURY" || d.type === "TOW AWAY") ? "red" : "green");
+      d3.select(this).attr('fill', 'steelblue');
       tooltip.transition().duration(200).style('opacity', 0.9);
       tooltip.html(`${d.type}<br/>Count: ${formatValue(Math.abs(d.count))}`).style('left', event.pageX + 'px').style('top', event.pageY - 28 + 'px');
     })
     .on('mouseout', function (d) {
-      d3.select(this).attr('fill', 'steelblue');
+      d3.select(this).attr('fill', d => {
+        if (d.type === "TOTAL") {
+          return "lightgray"; // Restore original fill color for the "Total" bar on mouseout
+        } else {
+          return (d.type === "INJURY" || d.type === "TOW AWAY") ? "red" : "green";
+        }
+      });
       tooltip.transition().duration(500).style('opacity', 0);
     });
 
@@ -92,14 +108,14 @@ d3.csv(dataLink).then((data) => {
   svg.append("g")
     .attr("transform", "translate(0," + height + ")")
     .call(d3.axisBottom(x).tickFormat(customXAxisTickFormat))
-    .selectAll("text")  
-    .style("font-size", "16px"); 
+    .selectAll("text")
+    .style("font-size", "16px");
 
   // Add y-axis
   svg.append("g")
     .call(d3.axisLeft(y))
-    .selectAll("text")  
-    .style("font-size", "15px"); 
+    .selectAll("text")
+    .style("font-size", "15px");
 
   // Add x-axis label
   svg.append('text')

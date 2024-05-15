@@ -90,6 +90,10 @@ input, select, textarea {
 
 	}
 
+	button.active {
+		color: red;
+	}	  
+
 	html {
 		box-sizing: border-box;
 	}
