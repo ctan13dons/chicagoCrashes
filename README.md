@@ -1,7 +1,7 @@
 # User Manual
 
 ## Link to Live Site
-[bit.ly/chicagoCrashes](bit.ly/chicagoCrashes) 
+[Click Here](https://ctan13dons.github.io/chicagoCrashes/) 
 
 ## Installation 
 To run my site locally, you have to make a fork of this repo, then git clone the forked repo like so replacing the angle bracketed part <> with your github username:
