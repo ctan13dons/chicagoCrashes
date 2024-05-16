@@ -20,3 +20,6 @@ code .
 ```
 
 Run a live server using VSCode and you're done!
+
+## Data 
+To view the data, you will have to follow the steps above to get everything to your local machine then use Excel to open the csv file. From my experience, the file is too large to open on Github.  
